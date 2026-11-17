@@ -1,6 +1,8 @@
-package com.example.agrotech_api.externo;
+package com.example.agrotech_api.n1.externo;
 
 import com.example.agrotech_api.exception.BusinessRuleException;
+import com.example.agrotech_api.externo.SefazFiscalGateway;
+import com.example.agrotech_api.externo.SefazFiscalService;
 import com.example.agrotech_api.model.Venda;
 import java.math.BigDecimal;
 import org.junit.jupiter.api.AfterEach;

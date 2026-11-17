@@ -1,10 +1,13 @@
-package com.example.agrotech_api.service;
+package com.example.agrotech_api.n1.service;
 
 import com.example.agrotech_api.exception.BusinessRuleException;
 import com.example.agrotech_api.exception.InsufficientStockException;
 import com.example.agrotech_api.model.Produto;
 import com.example.agrotech_api.repository.ProdutoRepository;
 import java.math.BigDecimal;
+
+import com.example.agrotech_api.service.FornecedorService;
+import com.example.agrotech_api.service.ProdutoService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;

@@ -1,4 +1,4 @@
-package com.example.agrotech_api.service;
+package com.example.agrotech_api.n1.service;
 
 import com.example.agrotech_api.exception.BusinessRuleException;
 import com.example.agrotech_api.model.Cliente;
@@ -12,6 +12,11 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+
+import com.example.agrotech_api.service.ClienteService;
+import com.example.agrotech_api.service.FuncionarioService;
+import com.example.agrotech_api.service.ProdutoService;
+import com.example.agrotech_api.service.VendaService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;

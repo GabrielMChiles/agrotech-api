@@ -1,7 +1,10 @@
-package com.example.agrotech_api.externo;
+package com.example.agrotech_api.n1.externo;
 
 import com.example.agrotech_api.exception.BusinessRuleException;
 import java.math.BigDecimal;
+
+import com.example.agrotech_api.externo.AnaliseCreditoGateway;
+import com.example.agrotech_api.externo.AnaliseCreditoService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeEach;

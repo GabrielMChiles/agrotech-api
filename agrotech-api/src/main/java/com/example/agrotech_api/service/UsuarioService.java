@@ -16,7 +16,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 @Transactional(readOnly = true)
@@ -25,6 +27,9 @@ public class UsuarioService {
     private final UsuarioRepository usuarioRepository;
     private final FuncionarioService funcionarioService;
     private final PasswordEncoder passwordEncoder;
+
+    // Registro thread-safe das sessões autenticadas no servidor (Token -> Usuario)
+    private final Map<String, Usuario> sessoesAtivas = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           FuncionarioService funcionarioService,
@@ -45,6 +50,9 @@ public class UsuarioService {
         String rawToken = usuario.getUsername() + ":" + usuario.getRole().name() + ":" + UUID.randomUUID();
         String token = Base64.getEncoder().encodeToString(rawToken.getBytes(StandardCharsets.UTF_8));
 
+        // Registra o token válido emitido pelo servidor
+        sessoesAtivas.put(token, usuario);
+
         return new LoginResponseDTO(
                 token,
                 usuario.getUsername(),
@@ -52,6 +60,19 @@ public class UsuarioService {
                 usuario.getFuncionario().getId(),
                 usuario.getFuncionario().getNome()
         );
+    }
+
+    public Usuario validarToken(String token) {
+        if (token == null || token.isBlank()) {
+            throw new UnauthorizedException("Token de autenticação ausente.");
+        }
+
+        Usuario usuario = sessoesAtivas.get(token);
+        if (usuario == null) {
+            throw new UnauthorizedException("Token inválido ou sessão expirada.");
+        }
+
+        return usuario;
     }
 
     @Transactional
@@ -94,4 +115,3 @@ public class UsuarioService {
         );
     }
 }
-

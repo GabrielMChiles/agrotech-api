@@ -1,0 +1,20 @@
+.p-datatable-sm .p-datatable-thead > tr > th {
+  background: var(--bg-page);
+  color: var(--text-main);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+.p-select,
+.p-inputtext,
+.p-inputnumber,
+.p-password,
+.p-datepicker {
+  width: 100%;
+}
+
+.p-password input,
+.p-inputnumber input {
+  width: 100%;
+}
+

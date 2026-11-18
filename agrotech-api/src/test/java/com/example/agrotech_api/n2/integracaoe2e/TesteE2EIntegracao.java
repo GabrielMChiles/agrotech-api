@@ -32,7 +32,7 @@ public class TesteE2EIntegracao {
     @AfterEach
     public void tearDown() {
         if (driver != null) {
-            driver.quit(); // Regra 5.3: Liberação obrigatória do processo do navegador
+            driver.quit(); // Liberação obrigatória do processo do navegador
         }
     }
 
@@ -57,7 +57,7 @@ public class TesteE2EIntegracao {
     }
 
     /**
-     * Abre um componente PrimeNG <p-select> a partir do seu inputId,
+     * Abre um componente PrimeNG <p-select> a partir inputId,
      * aguarda o carregamento assíncrono das opções e seleciona o primeiro item,
      * garantindo o fechamento limpo do overlay antes da próxima ação.
      */
@@ -76,12 +76,12 @@ public class TesteE2EIntegracao {
         );
         opcoes.get(0).click();
 
-        // Pós-condição: aguarda o overlay fechar completamente antes da próxima interação
+        // Aguarda o overlay fechar completamente antes da próxima interação
         wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
     }
 
     /**
-     * Abre um componente PrimeNG <p-select> a partir do seu inputId e seleciona a opção pelo texto visível.
+     * Abre um componente PrimeNG <p-select> a partir do inputId e seleciona a opção pelo texto visível.
      */
     private void selecionarOpcaoPrimeNGPorTexto(String inputId, String textoOpcao) {
         wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
@@ -105,7 +105,7 @@ public class TesteE2EIntegracao {
         // 1. Login como FUNCIONARIO (ana)
         realizarLogin("ana", "ana123");
 
-        // 2. Valida RBAC na UI: link 'Usuários' não deve existir para FUNCIONARIO
+        // 2. Valida que o link 'Usuários' não deve existir para FUNCIONARIO
         List<WebElement> linksUsuarios = driver.findElements(By.xpath("//a[contains(text(), 'Usuários')]"));
         assertTrue(linksUsuarios.isEmpty(), "Falha de RBAC na UI: Funcionário não deveria ver o menu Usuários.");
 
@@ -149,7 +149,7 @@ public class TesteE2EIntegracao {
     }
 
     @Test
-    @DisplayName("Caso E2E 2: Administrador (admin) deve acessar /usuarios e cadastrar novo acesso")
+    @DisplayName("Caso 2: Administrador (admin) deve acessar /usuarios e cadastrar novo acesso")
     public void testCadastrarNovoUsuario() {
         // 1. Login como ADMIN (admin)
         realizarLogin("admin", "admin123");

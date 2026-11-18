@@ -28,6 +28,16 @@ O sistema opera sob uma arquitetura cliente-servidor estritamente desacoplada:
 
 ---
 
+## 🎬 Demonstrações em Vídeo
+
+Abaixo estão os vídeos de validação funcional e técnica da solução:
+
+| Escopo da Demonstração | Descrição | Link de Acesso |
+| :--- | :--- | :--- |
+| **Sistema Full Stack em Operação e Execução da Suíte de Testes** | Fluxo completo de autenticação (`ADMIN` e `FUNCIONARIO`), gestão de catálogo, clientes, controle de estoque e efetivação de vendas na SPA Angular integrada ao PostgreSQL. Também, execução automatizada da Pirâmide de Testes: Testes Unitários (`JUnit 5 + Mockito`), Testes de Contrato/RBAC na API (`REST-assured`) e Testes End-to-End no navegador (`Selenium WebDriver`). | [▶️ Assistir Demonstração do Sistema](https://canva.link/np6q9txfor89v2v) |
+
+---
+
 ## 🛠️ Tecnologias Utilizadas
 
 ### Back-end (`agrotech-api`)
@@ -56,7 +66,7 @@ O sistema opera sob uma arquitetura cliente-servidor estritamente desacoplada:
 ```text
 agrotech/
 ├── agrotech-api/          # API RESTful em Java + Spring Boot, entidades JPA, regras de negócio e suíte de testes
-├── agrotech-front/        # Aplicação SPA em Angular + PrimeNGt)
+├── agrotech-front/        # Aplicação SPA em Angular + PrimeNG
 ├── docs/                  # Documentação de requisitos e evidências
 └── README.md              # Documentação principal do projeto
 ```

@@ -12,12 +12,16 @@ import org.openqa.selenium.support.ui.WebDriverWait;
 import java.time.Duration;
 import java.util.List;
 
+import io.restassured.http.ContentType;
+
+import static io.restassured.RestAssured.given;
 import static org.junit.jupiter.api.Assertions.*;
 
 @DisplayName("Testes E2E (Selenium WebDriver) - Fluxos Operacionais AgroTech")
 public class TesteE2EIntegracao {
 
     private static final String FRONTEND_URL = "http://localhost:4200";
+    private static final String API_URL = "http://localhost:8080";
     private WebDriver driver;
     private WebDriverWait wait;
 
@@ -25,6 +29,13 @@ public class TesteE2EIntegracao {
     public void setUp() {
         ChromeOptions options = new ChromeOptions();
         options.addArguments("--start-maximized");
+        // Evita o popup "Change your password" do Chrome (senhas de teste fracas) durante o login
+        options.addArguments("--disable-features=PasswordLeakDetection,SafetyCheck");
+        java.util.Map<String, Object> prefs = new java.util.HashMap<>();
+        prefs.put("credentials_enable_service", false);
+        prefs.put("profile.password_manager_enabled", false);
+        prefs.put("profile.password_manager_leak_detection", false);
+        options.setExperimentalOption("prefs", prefs);
         driver = new ChromeDriver(options);
         wait = new WebDriverWait(driver, Duration.ofSeconds(10));
     }
@@ -32,7 +43,7 @@ public class TesteE2EIntegracao {
     @AfterEach
     public void tearDown() {
         if (driver != null) {
-            driver.quit(); // Liberação obrigatória do processo do navegador
+            driver.quit(); // Regra 5.3: Liberação obrigatória do processo do navegador
         }
     }
 
@@ -57,46 +68,73 @@ public class TesteE2EIntegracao {
     }
 
     /**
-     * Abre um componente PrimeNG <p-select> a partir inputId,
-     * aguarda o carregamento assíncrono das opções e seleciona o primeiro item,
-     * garantindo o fechamento limpo do overlay antes da próxima ação.
+     * Abre um componente PrimeNG <p-select> a partir do seu inputId e seleciona a primeira opção disponível.
      */
     private void selecionarPrimeiraOpcaoPrimeNG(String inputId) {
-        // Pré-condição: garante que nenhum overlay anterior ainda esteja animando no DOM
-        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
-
         WebElement containerSelect = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//*[@id='" + inputId + "']/ancestor::*[contains(@class, 'p-select')][1]")
         ));
-        containerSelect.click();
+        abrirSelect(containerSelect);
 
-        // Aguarda pelo menos 1 opção visível (sincroniza com o retorno do HttpClient)
-        List<WebElement> opcoes = wait.until(
-                ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("li[role='option']"))
-        );
-        opcoes.get(0).click();
+        WebElement primeiraOpcao = wait.until(ExpectedConditions.elementToBeClickable(
+                By.xpath("(//li[@role='option' and not(@aria-disabled='true')])[1]")
+        ));
+        clicarComJs(primeiraOpcao);
+        aguardarOverlayFechar();
+    }
 
-        // Aguarda o overlay fechar completamente antes da próxima interação
-        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
+    /** Abre o p-select e garante que o overlay apareceu; se o primeiro clique se perder, tenta de novo. */
+    private void abrirSelect(WebElement containerSelect) {
+        for (int tentativa = 0; tentativa < 3; tentativa++) {
+            containerSelect.click();
+            try {
+                new WebDriverWait(driver, Duration.ofSeconds(3)).until(
+                        ExpectedConditions.visibilityOfElementLocated(By.cssSelector(".p-select-overlay li[role='option']")));
+                return;
+            } catch (org.openqa.selenium.TimeoutException ignorado) {
+                // overlay não abriu; tenta novamente
+            }
+        }
+    }
+
+    /** Clique via JS: o overlay do PrimeNG anima ao abrir e o clique nativo do Selenium pode se perder nesse intervalo. */
+    private void clicarComJs(WebElement el) {
+        ((org.openqa.selenium.JavascriptExecutor) driver).executeScript("arguments[0].click();", el);
+    }
+
+    /** Aguarda o overlay do p-select fechar, evitando clicar em opções de um dropdown anterior ainda em animação. */
+    private void aguardarOverlayFechar() {
+        wait.until(ExpectedConditions.invisibilityOfElementLocated(By.cssSelector(".p-select-overlay")));
+    }
+
+    /** Cria via API um funcionário sem usuário vinculado, para o teste não depender de dados já consumidos. */
+    private String criarFuncionarioLivre() {
+        String token = given().baseUri(API_URL).contentType(ContentType.JSON)
+                .body("{\"username\":\"admin\",\"senha\":\"admin123\"}")
+                .post("/api/auth/login").then().statusCode(200).extract().path("token");
+
+        String nome = "Operador E2E " + (System.currentTimeMillis() % 100000);
+        given().baseUri(API_URL).contentType(ContentType.JSON).auth().oauth2(token)
+                .body("{\"nome\":\"%s\",\"matricula\":\"E%d\",\"cargo\":\"Operador\"}"
+                        .formatted(nome, System.currentTimeMillis() % 1000000))
+                .post("/api/funcionarios").then().statusCode(201);
+        return nome;
     }
 
     /**
-     * Abre um componente PrimeNG <p-select> a partir do inputId e seleciona a opção pelo texto visível.
+     * Abre um componente PrimeNG <p-select> a partir do seu inputId e seleciona a opção pelo texto visível.
      */
     private void selecionarOpcaoPrimeNGPorTexto(String inputId, String textoOpcao) {
-        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
-
         WebElement containerSelect = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//*[@id='" + inputId + "']/ancestor::*[contains(@class, 'p-select')][1]")
         ));
-        containerSelect.click();
+        abrirSelect(containerSelect);
 
         WebElement opcaoAlvo = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//li[@role='option'][contains(., '" + textoOpcao + "')]")
         ));
-        opcaoAlvo.click();
-
-        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
+        clicarComJs(opcaoAlvo);
+        aguardarOverlayFechar();
     }
 
     @Test
@@ -105,7 +143,7 @@ public class TesteE2EIntegracao {
         // 1. Login como FUNCIONARIO (ana)
         realizarLogin("ana", "ana123");
 
-        // 2. Valida que o link 'Usuários' não deve existir para FUNCIONARIO
+        // 2. Valida RBAC na UI: link 'Usuários' não deve existir para FUNCIONARIO
         List<WebElement> linksUsuarios = driver.findElements(By.xpath("//a[contains(text(), 'Usuários')]"));
         assertTrue(linksUsuarios.isEmpty(), "Falha de RBAC na UI: Funcionário não deveria ver o menu Usuários.");
 
@@ -120,11 +158,11 @@ public class TesteE2EIntegracao {
         selecionarPrimeiraOpcaoPrimeNG("select-venda-cliente");
         selecionarPrimeiraOpcaoPrimeNG("select-venda-produto");
 
-        // 5. Define quantidade = 2 no p-inputnumber usando Ctrl+A para sobrescrever o valor padrão
+        // 5. Define quantidade = 2 no p-inputnumber (inputId="input-venda-quantidade")
         WebElement inputQuantidade = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.id("input-venda-quantidade")
         ));
-        inputQuantidade.sendKeys(org.openqa.selenium.Keys.chord(org.openqa.selenium.Keys.CONTROL, "a"));
+        inputQuantidade.clear();
         inputQuantidade.sendKeys("2");
 
         // 6. Clica em 'Adicionar Item' (id="btn-adicionar-item")
@@ -149,8 +187,11 @@ public class TesteE2EIntegracao {
     }
 
     @Test
-    @DisplayName("Caso 2: Administrador (admin) deve acessar /usuarios e cadastrar novo acesso")
+    @DisplayName("Caso E2E 2: Administrador (admin) deve acessar /usuarios e cadastrar novo acesso")
     public void testCadastrarNovoUsuario() {
+        // 0. Garante um funcionário livre (sem usuário) para este teste
+        String nomeFuncionario = criarFuncionarioLivre();
+
         // 1. Login como ADMIN (admin)
         realizarLogin("admin", "admin123");
 
@@ -174,9 +215,9 @@ public class TesteE2EIntegracao {
         inputSenha.clear();
         inputSenha.sendKeys("senha123");
 
-        // 4. Seleciona o perfil FUNCIONARIO e o funcionário livre 'Marcos Oliveira' (M03)
+        // 4. Seleciona o perfil FUNCIONARIO e o funcionário livre criado no passo 0
         selecionarOpcaoPrimeNGPorTexto("select-usuario-role", "FUNCIONARIO");
-        selecionarOpcaoPrimeNGPorTexto("select-usuario-funcionario", "Marcos Oliveira");
+        selecionarOpcaoPrimeNGPorTexto("select-usuario-funcionario", nomeFuncionario);
 
         // 5. Submete o formulário (id="btn-salvar-usuario")
         WebElement btnSalvarUsuario = wait.until(ExpectedConditions.elementToBeClickable(
@@ -184,10 +225,17 @@ public class TesteE2EIntegracao {
         ));
         btnSalvarUsuario.click();
 
-        // 6. Valida que o novo usuário apareceu na listagem da tabela
-        WebElement registroNaTabela = wait.until(ExpectedConditions.visibilityOfElementLocated(
-                By.xpath("//td[contains(text(), '" + usernameDinamico + "')]")
+        // 6. Valida o toast de sucesso na UI (a tabela é paginada, então o novo registro pode cair em outra página)
+        wait.until(ExpectedConditions.visibilityOfElementLocated(
+                By.xpath("//*[contains(@class,'p-toast-summary')][contains(., 'Sucesso')]")
         ));
-        assertTrue(registroNaTabela.isDisplayed(), "O novo usuário cadastrado deveria aparecer na tabela.");
+
+        // 7. Confirma a persistência consultando a API
+        String token = given().baseUri(API_URL).contentType(ContentType.JSON)
+                .body("{\"username\":\"admin\",\"senha\":\"admin123\"}")
+                .post("/api/auth/login").then().statusCode(200).extract().path("token");
+        List<String> usernames = given().baseUri(API_URL).auth().oauth2(token)
+                .get("/api/usuarios").then().statusCode(200).extract().path("username");
+        assertTrue(usernames.contains(usernameDinamico), "O novo usuário cadastrado deveria existir na API.");
     }
 }

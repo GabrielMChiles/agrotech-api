@@ -16,6 +16,8 @@ public interface ProdutoRepository extends JpaRepository<Produto, Long> {
     // Exemplo de query derivada: Buscar produtos com estoque baixo
     List<Produto> findByQuantidadeEstoqueLessThan(Integer quantidade);
 
+    long countByFornecedorId(Long fornecedorId);
+
     @Override
     @EntityGraph(attributePaths = "fornecedor")
     Page<Produto> findAll(Pageable pageable);

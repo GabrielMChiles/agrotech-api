@@ -7,7 +7,10 @@ import { InputTextModule } from 'primeng/inputtext';
 import { TableModule } from 'primeng/table';
 import { ClienteResponse } from '../../core/models/cliente.model';
 import { ClienteService } from '../../core/services/cliente.service';
+import { AuthService } from '../../core/services/auth.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error.util';
+import { cpfCnpjValidator, telefoneValidator } from '../../core/utils/documentos.util';
+import { MaskDirective } from '../../shared/directives/mask.directive';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
 @Component({
@@ -19,7 +22,8 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
     TableModule,
     ButtonModule,
     DialogModule,
-    InputTextModule
+    InputTextModule,
+    MaskDirective
   ],
   template: `
     <div class="page-container">
@@ -70,13 +74,15 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                     severity="info"
                     (onClick)="abrirEdicao(c)"
                   />
-                  <p-button
-                    [id]="'btn-excluir-cliente-' + c.id"
-                    icon="pi pi-trash"
-                    [text]="true"
-                    severity="danger"
-                    (onClick)="confirmarExclusao(c)"
-                  />
+                  @if (auth.isAdmin()) {
+                    <p-button
+                      [id]="'btn-excluir-cliente-' + c.id"
+                      icon="pi pi-trash"
+                      [text]="true"
+                      severity="danger"
+                      (onClick)="confirmarExclusao(c)"
+                    />
+                  }
                 </div>
               </td>
             </tr>
@@ -104,6 +110,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 type="text"
                 pInputText
                 formControlName="nome"
+                maxlength="100"
                 placeholder="Ex: Fazenda Santa Maria"
               />
               @if (form.controls.nome.invalid && form.controls.nome.touched) {
@@ -117,11 +124,14 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 id="input-cliente-cpfcnpj"
                 type="text"
                 pInputText
+                appMask="cpfCnpj"
                 formControlName="cpfCnpj"
+                maxlength="18"
                 placeholder="Ex: 000.000.000-00 ou 00.000.000/0001-00"
+                inputmode="numeric"
               />
-              @if (form.controls.cpfCnpj.invalid && form.controls.cpfCnpj.touched) {
-                <small class="field-error">CPF/CNPJ é obrigatório.</small>
+              @if (form.controls.cpfCnpj.touched && form.controls.cpfCnpj.errors; as e) {
+                <small class="field-error">{{ e['required'] ? 'CPF/CNPJ é obrigatório.' : 'CPF/CNPJ inválido.' }}</small>
               }
             </div>
 
@@ -132,6 +142,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 type="text"
                 pInputText
                 formControlName="inscricaoEstadual"
+                maxlength="50"
                 placeholder="Ex: 10203040-5 ou ISENTO"
               />
             </div>
@@ -142,9 +153,15 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 id="input-cliente-telefone"
                 type="text"
                 pInputText
+                appMask="telefone"
                 formControlName="telefone"
+                maxlength="15"
                 placeholder="Ex: (62) 99999-0000"
+                inputmode="tel"
               />
+              @if (form.controls.telefone.touched && form.controls.telefone.errors) {
+                <small class="field-error">Telefone inválido. Use DDD + número.</small>
+              }
             </div>
 
             <div class="field-group" style="grid-column: 1 / -1;">
@@ -154,6 +171,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 type="text"
                 pInputText
                 formControlName="endereco"
+                maxlength="200"
                 placeholder="Ex: Rodovia GO-060, Km 12"
               />
             </div>
@@ -193,6 +211,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
   `
 })
 export class ClientesComponent implements OnInit {
+  protected readonly auth = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly clienteService = inject(ClienteService);
   private readonly messages = inject(MessageService);
@@ -206,9 +225,9 @@ export class ClientesComponent implements OnInit {
 
   protected readonly form = this.fb.group({
     nome: ['', [Validators.required]],
-    cpfCnpj: ['', [Validators.required]],
+    cpfCnpj: ['', [Validators.required, cpfCnpjValidator]],
     inscricaoEstadual: [''],
-    telefone: [''],
+    telefone: ['', [telefoneValidator]],
     endereco: ['']
   });
 

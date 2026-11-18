@@ -10,7 +10,7 @@ public record VendaRequestDTO(
         @NotNull(message = "O ID do cliente é obrigatório")
         Long clienteId,
 
-        @NotNull(message = "O ID do funcionário é obrigatório")
+        // Opcional: o vendedor efetivo é o usuário autenticado
         Long funcionarioId,
 
         @NotEmpty(message = "A venda deve conter pelo menos um item")

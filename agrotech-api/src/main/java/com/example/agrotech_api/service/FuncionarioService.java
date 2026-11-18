@@ -30,6 +30,13 @@ public class FuncionarioService {
     @Transactional
     public Funcionario atualizar(Long id, Funcionario funcionarioAtualizado) {
         Funcionario funcionarioExistente = buscarPorId(id);
+        funcionarioRepository.findByMatricula(funcionarioAtualizado.getMatricula())
+                .filter(outro -> !outro.getId().equals(id))
+                .ifPresent(outro -> {
+                    throw new BusinessRuleException(
+                            "Já existe um funcionário cadastrado com a matrícula: " + funcionarioAtualizado.getMatricula());
+                });
+        funcionarioExistente.setMatricula(funcionarioAtualizado.getMatricula());
         funcionarioExistente.setNome(funcionarioAtualizado.getNome());
         funcionarioExistente.setCargo(funcionarioAtualizado.getCargo());
         return funcionarioRepository.save(funcionarioExistente);

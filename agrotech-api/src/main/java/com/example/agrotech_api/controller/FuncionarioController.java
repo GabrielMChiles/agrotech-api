@@ -5,7 +5,6 @@ import com.example.agrotech_api.model.Funcionario;
 import com.example.agrotech_api.model.dto.FuncionarioRequestDTO;
 import com.example.agrotech_api.model.dto.FuncionarioResponseDTO;
 import com.example.agrotech_api.service.FuncionarioService;
-import com.example.agrotech_api.service.ProdutoService;
 import jakarta.validation.Valid;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -34,6 +33,12 @@ public class FuncionarioController {
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(salvo.getId()).toUri();
         return ResponseEntity.created(location).body(funcionarioMapper.toResponseDTO(salvo));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<FuncionarioResponseDTO> atualizar(@PathVariable Long id,
+            @Valid @RequestBody FuncionarioRequestDTO dto) {
+        return ResponseEntity.ok(funcionarioMapper.toResponseDTO(funcionarioService.atualizar(id, funcionarioMapper.toEntity(dto))));
     }
 
     @GetMapping("/{id}")

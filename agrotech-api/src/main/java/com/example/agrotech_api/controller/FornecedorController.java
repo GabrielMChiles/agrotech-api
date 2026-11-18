@@ -35,6 +35,18 @@ public class FornecedorController {
         return ResponseEntity.created(location).body(fornecedorMapper.toResponseDTO(salvo));
     }
 
+    @PutMapping("/{id}")
+    public ResponseEntity<FornecedorResponseDTO> atualizar(@PathVariable Long id,
+            @Valid @RequestBody FornecedorRequestDTO dto) {
+        return ResponseEntity.ok(fornecedorMapper.toResponseDTO(fornecedorService.atualizar(id, fornecedorMapper.toEntity(dto))));
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> excluir(@PathVariable Long id) {
+        fornecedorService.excluir(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<FornecedorResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(fornecedorMapper.toResponseDTO(fornecedorService.buscarPorId(id)));

@@ -81,9 +81,12 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
             <p-select
               inputId="select-venda-produto"
               formControlName="produtoId"
-              [options]="produtos()"
+              [options]="produtosVenda()"
               optionLabel="nome"
               optionValue="id"
+              optionDisabled="indisponivel"
+              [filter]="true"
+              filterBy="nome"
               placeholder="Selecione um produto"
             >
               <ng-template #item let-p>
@@ -91,6 +94,9 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                   <span>{{ p.nome }}</span>
                   <small class="text-muted">
                     Estoque: {{ p.quantidadeEstoque }} | {{ p.precoAtual | currency: 'BRL' }}
+                    @if (p.motivo) {
+                      | <strong class="field-error">{{ p.motivo }}</strong>
+                    }
                   </small>
                 </div>
               </ng-template>
@@ -254,6 +260,16 @@ export class NovaVendaComponent implements OnInit {
   protected readonly cartItems = signal<CartItem[]>([]);
   protected readonly submitting = signal(false);
 
+  /** Produtos com estoque zerado ou validade vencida não podem ser vendidos (RN02 / validade). */
+  protected readonly produtosVenda = computed(() => {
+    const hoje = new Date().toISOString().slice(0, 10);
+    return this.produtos().map((p) => {
+      const vencido = !!p.dataValidade && p.dataValidade < hoje;
+      const motivo = vencido ? 'Vencido' : p.quantidadeEstoque <= 0 ? 'Sem estoque' : '';
+      return { ...p, indisponivel: !!motivo, motivo };
+    });
+  });
+
   protected readonly valorTotal = computed(() =>
     this.cartItems().reduce((sum, item) => sum + item.precoUnitario * item.quantidade, 0)
   );
@@ -298,6 +314,16 @@ export class NovaVendaComponent implements OnInit {
 
     const current = this.cartItems();
     const existing = current.find((i) => i.produtoId === produtoId);
+
+    const jaNoCarrinho = existing?.quantidade ?? 0;
+    if (jaNoCarrinho + quantidade > produto.quantidadeEstoque) {
+      this.messages.add({
+        severity: 'warn',
+        summary: 'Estoque insuficiente',
+        detail: `"${produto.nome}": disponível ${produto.quantidadeEstoque}, já no carrinho ${jaNoCarrinho}.`
+      });
+      return;
+    }
 
     if (existing) {
       this.cartItems.set(

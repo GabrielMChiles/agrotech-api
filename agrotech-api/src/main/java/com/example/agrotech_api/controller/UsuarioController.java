@@ -2,6 +2,7 @@ package com.example.agrotech_api.controller;
 
 import com.example.agrotech_api.model.dto.UsuarioRequestDTO;
 import com.example.agrotech_api.model.dto.UsuarioResponseDTO;
+import com.example.agrotech_api.model.dto.UsuarioUpdateDTO;
 import com.example.agrotech_api.service.UsuarioService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -23,6 +24,12 @@ public class UsuarioController {
     @PostMapping
     public ResponseEntity<UsuarioResponseDTO> criar(@Valid @RequestBody UsuarioRequestDTO dto) {
         return ResponseEntity.status(HttpStatus.CREATED).body(usuarioService.criar(dto));
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<UsuarioResponseDTO> atualizar(@PathVariable Long id,
+                                                        @Valid @RequestBody UsuarioUpdateDTO dto) {
+        return ResponseEntity.ok(usuarioService.atualizar(id, dto));
     }
 
     @GetMapping

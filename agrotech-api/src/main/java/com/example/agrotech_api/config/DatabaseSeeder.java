@@ -65,6 +65,13 @@ public class DatabaseSeeder implements CommandLineRunner {
                         .cargo("Consultora de Vendas")
                         .build()));
 
+        funcionarioRepository.findByMatricula("M03")
+                .orElseGet(() -> funcionarioRepository.save(Funcionario.builder()
+                        .nome("Marcos Oliveira")
+                        .matricula("M03")
+                        .cargo("Operador de Caixa")
+                        .build()));
+
         if (!usuarioRepository.existsByUsername("admin")) {
             usuarioRepository.save(Usuario.builder()
                     .username("admin")

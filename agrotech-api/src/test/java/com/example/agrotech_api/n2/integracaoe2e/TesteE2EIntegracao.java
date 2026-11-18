@@ -57,24 +57,35 @@ public class TesteE2EIntegracao {
     }
 
     /**
-     * Abre um componente PrimeNG <p-select> a partir do seu inputId e seleciona a primeira opção disponível.
+     * Abre um componente PrimeNG <p-select> a partir do seu inputId,
+     * aguarda o carregamento assíncrono das opções e seleciona o primeiro item,
+     * garantindo o fechamento limpo do overlay antes da próxima ação.
      */
     private void selecionarPrimeiraOpcaoPrimeNG(String inputId) {
+        // Pré-condição: garante que nenhum overlay anterior ainda esteja animando no DOM
+        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
+
         WebElement containerSelect = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//*[@id='" + inputId + "']/ancestor::*[contains(@class, 'p-select')][1]")
         ));
         containerSelect.click();
 
-        WebElement primeiraOpcao = wait.until(ExpectedConditions.elementToBeClickable(
-                By.cssSelector("li[role='option']:first-child")
-        ));
-        primeiraOpcao.click();
+        // Aguarda pelo menos 1 opção visível (sincroniza com o retorno do HttpClient)
+        List<WebElement> opcoes = wait.until(
+                ExpectedConditions.visibilityOfAllElementsLocatedBy(By.cssSelector("li[role='option']"))
+        );
+        opcoes.get(0).click();
+
+        // Pós-condição: aguarda o overlay fechar completamente antes da próxima interação
+        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
     }
 
     /**
      * Abre um componente PrimeNG <p-select> a partir do seu inputId e seleciona a opção pelo texto visível.
      */
     private void selecionarOpcaoPrimeNGPorTexto(String inputId, String textoOpcao) {
+        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
+
         WebElement containerSelect = wait.until(ExpectedConditions.elementToBeClickable(
                 By.xpath("//*[@id='" + inputId + "']/ancestor::*[contains(@class, 'p-select')][1]")
         ));
@@ -84,6 +95,8 @@ public class TesteE2EIntegracao {
                 By.xpath("//li[@role='option'][contains(., '" + textoOpcao + "')]")
         ));
         opcaoAlvo.click();
+
+        wait.until(ExpectedConditions.numberOfElementsToBe(By.cssSelector("li[role='option']"), 0));
     }
 
     @Test
@@ -107,11 +120,11 @@ public class TesteE2EIntegracao {
         selecionarPrimeiraOpcaoPrimeNG("select-venda-cliente");
         selecionarPrimeiraOpcaoPrimeNG("select-venda-produto");
 
-        // 5. Define quantidade = 2 no p-inputnumber (inputId="input-venda-quantidade")
+        // 5. Define quantidade = 2 no p-inputnumber usando Ctrl+A para sobrescrever o valor padrão
         WebElement inputQuantidade = wait.until(ExpectedConditions.visibilityOfElementLocated(
                 By.id("input-venda-quantidade")
         ));
-        inputQuantidade.clear();
+        inputQuantidade.sendKeys(org.openqa.selenium.Keys.chord(org.openqa.selenium.Keys.CONTROL, "a"));
         inputQuantidade.sendKeys("2");
 
         // 6. Clica em 'Adicionar Item' (id="btn-adicionar-item")

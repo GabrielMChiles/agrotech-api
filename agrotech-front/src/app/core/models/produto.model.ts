@@ -25,3 +25,9 @@ export interface ProdutoResponse {
   nomeFornecedor: string;
 }
 
+
+export interface FornecedorRequest {
+  razaoSocial: string;
+  cnpj: string;
+  telefoneContato?: string | null;
+}

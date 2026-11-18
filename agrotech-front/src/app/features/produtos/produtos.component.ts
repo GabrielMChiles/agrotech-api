@@ -10,6 +10,7 @@ import { SelectModule } from 'primeng/select';
 import { TableModule } from 'primeng/table';
 import { FornecedorResponse, ProdutoResponse } from '../../core/models/produto.model';
 import { ProdutoService } from '../../core/services/produto.service';
+import { AuthService } from '../../core/services/auth.service';
 import { extractApiErrorMessage } from '../../core/utils/api-error.util';
 import { PageHeaderComponent } from '../../shared/components/page-header/page-header.component';
 
@@ -79,13 +80,15 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                     severity="info"
                     (onClick)="abrirEdicao(p)"
                   />
-                  <p-button
-                    [id]="'btn-excluir-produto-' + p.id"
-                    icon="pi pi-trash"
-                    [text]="true"
-                    severity="danger"
-                    (onClick)="confirmarExclusao(p)"
-                  />
+                  @if (auth.isAdmin()) {
+                    <p-button
+                      [id]="'btn-excluir-produto-' + p.id"
+                      icon="pi pi-trash"
+                      [text]="true"
+                      severity="danger"
+                      (onClick)="confirmarExclusao(p)"
+                    />
+                  }
                 </div>
               </td>
             </tr>
@@ -113,6 +116,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 type="text"
                 pInputText
                 formControlName="nome"
+                maxlength="100"
                 placeholder="Ex: Semente de Soja 40kg"
               />
               @if (form.controls.nome.invalid && form.controls.nome.touched) {
@@ -127,6 +131,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 type="text"
                 pInputText
                 formControlName="categoria"
+                maxlength="60"
                 placeholder="Ex: Sementes, Fertilizantes"
               />
             </div>
@@ -153,6 +158,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
                 formControlName="quantidadeEstoque"
                 [useGrouping]="false"
                 [min]="0"
+                [max]="1000000"
               />
               @if (form.controls.quantidadeEstoque.invalid && form.controls.quantidadeEstoque.touched) {
                 <small class="field-error">Estoque deve ser zero ou maior.</small>
@@ -220,6 +226,7 @@ import { PageHeaderComponent } from '../../shared/components/page-header/page-he
   `
 })
 export class ProdutosComponent implements OnInit {
+  protected readonly auth = inject(AuthService);
   private readonly fb = inject(NonNullableFormBuilder);
   private readonly produtoService = inject(ProdutoService);
   private readonly messages = inject(MessageService);
@@ -236,7 +243,7 @@ export class ProdutosComponent implements OnInit {
     nome: ['', [Validators.required]],
     categoria: [''],
     precoAtual: [0.01, [Validators.required, Validators.min(0.01)]],
-    quantidadeEstoque: [0, [Validators.required, Validators.min(0)]],
+    quantidadeEstoque: [0, [Validators.required, Validators.min(0), Validators.max(1000000)]],
     dataValidade: [''],
     fornecedorId: [0, [Validators.required, Validators.min(1)]]
   });

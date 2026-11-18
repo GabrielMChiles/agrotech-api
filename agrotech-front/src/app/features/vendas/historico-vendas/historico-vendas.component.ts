@@ -7,6 +7,7 @@ import { DialogModule } from 'primeng/dialog';
 import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { VendaResponse } from '../../../core/models/venda.model';
+import { AuthService } from '../../../core/services/auth.service';
 import { VendaService } from '../../../core/services/venda.service';
 import { extractApiErrorMessage } from '../../../core/utils/api-error.util';
 import { PageHeaderComponent } from '../../../shared/components/page-header/page-header.component';
@@ -82,16 +83,18 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
                     severity="info"
                     (onClick)="verDetalhes(v)"
                   />
-                  <p-button
-                    [id]="'btn-cancelar-venda-' + v.id"
-                    label="Cancelar"
-                    icon="pi pi-times-circle"
-                    [text]="true"
-                    size="small"
-                    severity="danger"
-                    [disabled]="v.status === 'CANCELADA'"
-                    (onClick)="confirmarCancelamento(v)"
-                  />
+                  @if (auth.isAdmin()) {
+                    <p-button
+                      [id]="'btn-cancelar-venda-' + v.id"
+                      label="Cancelar"
+                      icon="pi pi-times-circle"
+                      [text]="true"
+                      size="small"
+                      severity="danger"
+                      [disabled]="v.status === 'CANCELADA'"
+                      (onClick)="confirmarCancelamento(v)"
+                    />
+                  }
                 </div>
               </td>
             </tr>
@@ -147,6 +150,7 @@ import { PageHeaderComponent } from '../../../shared/components/page-header/page
   `
 })
 export class HistoricoVendasComponent implements OnInit {
+  protected readonly auth = inject(AuthService);
   private readonly vendaService = inject(VendaService);
   private readonly messages = inject(MessageService);
   private readonly confirmation = inject(ConfirmationService);

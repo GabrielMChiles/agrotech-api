@@ -5,6 +5,10 @@ import com.example.agrotech_api.model.dto.VendaResponseDTO;
 import com.example.agrotech_api.mapper.VendaMapper;
 import com.example.agrotech_api.model.Venda;
 import com.example.agrotech_api.service.VendaService;
+import com.example.agrotech_api.config.AppSecurityConfig;
+import com.example.agrotech_api.model.Funcionario;
+import com.example.agrotech_api.model.Usuario;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -26,8 +30,13 @@ public class VendaController {
     }
 
     @PostMapping
-    public ResponseEntity<VendaResponseDTO> efetivarVenda(@Valid @RequestBody VendaRequestDTO requestDTO) {
+    public ResponseEntity<VendaResponseDTO> efetivarVenda(@Valid @RequestBody VendaRequestDTO requestDTO,
+                                                         HttpServletRequest request) {
         Venda entityInput = vendaMapper.toEntity(requestDTO);
+        // O vendedor é sempre o usuário autenticado; o funcionarioId do corpo é ignorado
+        if (request.getAttribute(AppSecurityConfig.ATRIBUTO_USUARIO_LOGADO) instanceof Usuario logado) {
+            entityInput.setFuncionario(Funcionario.builder().id(logado.getFuncionario().getId()).build());
+        }
         Venda vendaEfetivada = vendaService.efetivarVenda(entityInput);
         VendaResponseDTO responseDTO = vendaMapper.toResponseDTO(vendaEfetivada);
 

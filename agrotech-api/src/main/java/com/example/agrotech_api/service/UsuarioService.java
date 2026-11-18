@@ -1,18 +1,22 @@
 package com.example.agrotech_api.service;
 
 import com.example.agrotech_api.exception.BusinessRuleException;
+import com.example.agrotech_api.exception.ResourceNotFoundException;
 import com.example.agrotech_api.exception.UnauthorizedException;
+import com.example.agrotech_api.model.RoleUsuario;
 import com.example.agrotech_api.model.Funcionario;
 import com.example.agrotech_api.model.Usuario;
 import com.example.agrotech_api.model.dto.LoginRequestDTO;
 import com.example.agrotech_api.model.dto.LoginResponseDTO;
 import com.example.agrotech_api.model.dto.UsuarioRequestDTO;
 import com.example.agrotech_api.model.dto.UsuarioResponseDTO;
+import com.example.agrotech_api.model.dto.UsuarioUpdateDTO;
 import com.example.agrotech_api.repository.UsuarioRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.List;
@@ -29,7 +33,11 @@ public class UsuarioService {
     private final PasswordEncoder passwordEncoder;
 
     // Registro thread-safe das sessões autenticadas no servidor (Token -> Usuario)
-    private final Map<String, Usuario> sessoesAtivas = new ConcurrentHashMap<>();
+    private static final long DURACAO_SESSAO_HORAS = 8;
+
+    private record Sessao(Usuario usuario, Instant expiraEm) {}
+
+    private final Map<String, Sessao> sessoesAtivas = new ConcurrentHashMap<>();
 
     public UsuarioService(UsuarioRepository usuarioRepository,
                           FuncionarioService funcionarioService,
@@ -51,7 +59,9 @@ public class UsuarioService {
         String token = Base64.getEncoder().encodeToString(rawToken.getBytes(StandardCharsets.UTF_8));
 
         // Registra o token válido emitido pelo servidor
-        sessoesAtivas.put(token, usuario);
+        Instant agora = Instant.now();
+        sessoesAtivas.values().removeIf(s -> s.expiraEm().isBefore(agora));
+        sessoesAtivas.put(token, new Sessao(usuario, agora.plusSeconds(DURACAO_SESSAO_HORAS * 3600)));
 
         return new LoginResponseDTO(
                 token,
@@ -67,12 +77,13 @@ public class UsuarioService {
             throw new UnauthorizedException("Token de autenticação ausente.");
         }
 
-        Usuario usuario = sessoesAtivas.get(token);
-        if (usuario == null) {
+        Sessao sessao = sessoesAtivas.get(token);
+        if (sessao == null || sessao.expiraEm().isBefore(Instant.now())) {
+            sessoesAtivas.remove(token);
             throw new UnauthorizedException("Token inválido ou sessão expirada.");
         }
 
-        return usuario;
+        return sessao.usuario();
     }
 
     @Transactional
@@ -95,6 +106,41 @@ public class UsuarioService {
                 .build();
 
         Usuario salvo = usuarioRepository.save(usuario);
+        return toDTO(salvo);
+    }
+
+    @Transactional
+    public UsuarioResponseDTO atualizar(Long id, UsuarioUpdateDTO dto) {
+        Usuario usuario = usuarioRepository.findByIdComFuncionario(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuário não encontrado com o ID: " + id));
+
+        String username = dto.username().trim();
+        if (!username.equals(usuario.getUsername()) && usuarioRepository.existsByUsername(username)) {
+            throw new BusinessRuleException("Já existe um usuário com o login: " + username);
+        }
+
+        // Não permite deixar o sistema sem nenhum administrador
+        if (usuario.getRole() == RoleUsuario.ADMIN && dto.role() != RoleUsuario.ADMIN
+                && usuarioRepository.countByRole(RoleUsuario.ADMIN) <= 1) {
+            throw new BusinessRuleException("Não é possível remover o perfil ADMIN do único administrador do sistema.");
+        }
+
+        boolean trocouSenha = dto.senha() != null && !dto.senha().isBlank();
+        boolean alterouAcesso = trocouSenha
+                || !username.equals(usuario.getUsername())
+                || dto.role() != usuario.getRole();
+
+        usuario.setUsername(username);
+        usuario.setRole(dto.role());
+        if (trocouSenha) {
+            usuario.setSenhaHash(passwordEncoder.encode(dto.senha()));
+        }
+        Usuario salvo = usuarioRepository.save(usuario);
+
+        // Sessões abertas guardam o perfil antigo: força novo login quando o acesso muda
+        if (alterouAcesso) {
+            sessoesAtivas.values().removeIf(s -> s.usuario().getId().equals(id));
+        }
         return toDTO(salvo);
     }
 

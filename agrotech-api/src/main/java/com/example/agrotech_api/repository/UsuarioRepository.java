@@ -19,6 +19,11 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Long> {
 
     boolean existsByFuncionarioId(Long funcionarioId);
 
+    long countByRole(com.example.agrotech_api.model.RoleUsuario role);
+
+    @Query("SELECT u FROM Usuario u JOIN FETCH u.funcionario WHERE u.id = :id")
+    Optional<Usuario> findByIdComFuncionario(@Param("id") Long id);
+
     @Query("SELECT u FROM Usuario u JOIN FETCH u.funcionario ORDER BY u.id ASC")
     List<Usuario> findAllComFuncionario();
 }

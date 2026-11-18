@@ -36,7 +36,13 @@ import { AuthService } from '../../../core/services/auth.service';
               <a id="nav-produtos" routerLink="/produtos" routerLinkActive="active">
                 Produtos
               </a>
+              <a id="nav-fornecedores" routerLink="/fornecedores" routerLinkActive="active">
+                Fornecedores
+              </a>
               @if (auth.isAdmin()) {
+                <a id="nav-funcionarios" routerLink="/funcionarios" routerLinkActive="active">
+                  Funcionários
+                </a>
                 <a id="nav-usuarios" routerLink="/usuarios" routerLinkActive="active">
                   Usuários
                 </a>

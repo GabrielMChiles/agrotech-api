@@ -3,10 +3,12 @@ import { Routes } from '@angular/router';
 
 import { adminGuard } from './core/guards/admin.guard';
 import { authGuard } from './core/guards/auth.guard';
+import { guestGuard } from './core/guards/guest.guard';
 
 export const routes: Routes = [
   {
     path: 'login',
+    canActivate: [guestGuard],
     loadComponent: () =>
       import('./features/auth/login/login.component').then(
         (m) => m.LoginComponent
@@ -42,6 +44,22 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/produtos/produtos.component').then(
         (m) => m.ProdutosComponent
+      )
+  },
+  {
+    path: 'fornecedores',
+    canActivate: [authGuard],
+    loadComponent: () =>
+      import('./features/fornecedores/fornecedores.component').then(
+        (m) => m.FornecedoresComponent
+      )
+  },
+  {
+    path: 'funcionarios',
+    canActivate: [authGuard, adminGuard],
+    loadComponent: () =>
+      import('./features/funcionarios/funcionarios.component').then(
+        (m) => m.FuncionariosComponent
       )
   },
   {

@@ -7,6 +7,12 @@ export interface UsuarioRequest {
   funcionarioId: number;
 }
 
+export interface UsuarioUpdateRequest {
+  username: string;
+  senha?: string | null;
+  role: RoleUsuario;
+}
+
 export interface UsuarioResponse {
   id: number;
   username: string;
@@ -14,6 +20,12 @@ export interface UsuarioResponse {
   funcionarioId: number;
   funcionarioNome: string;
   funcionarioMatricula: string;
+}
+
+export interface FuncionarioRequest {
+  nome: string;
+  matricula: string;
+  cargo: string;
 }
 
 export interface FuncionarioResponse {

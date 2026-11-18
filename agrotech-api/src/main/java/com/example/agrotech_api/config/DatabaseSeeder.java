@@ -37,17 +37,20 @@ public class DatabaseSeeder implements CommandLineRunner {
     @Override
     @Transactional
     public void run(String... args) {
-        Fornecedor f1 = fornecedorRepository.findByCnpj("11.222.333/0001-44")
+        // CNPJs/CPFs válidos (dígito verificador); o CNPJ antigo é aceito para não duplicar em bancos já populados
+        Fornecedor f1 = fornecedorRepository.findByCnpj("11.222.333/0001-81")
+                .or(() -> fornecedorRepository.findByCnpj("11.222.333/0001-44"))
                 .orElseGet(() -> fornecedorRepository.save(Fornecedor.builder()
                         .razaoSocial("AgroSementes Brasil")
-                        .cnpj("11.222.333/0001-44")
+                        .cnpj("11.222.333/0001-81")
                         .telefoneContato("(62) 3333-1010")
                         .build()));
 
-        Fornecedor f2 = fornecedorRepository.findByCnpj("22.333.444/0001-55")
+        Fornecedor f2 = fornecedorRepository.findByCnpj("27.865.757/0001-02")
+                .or(() -> fornecedorRepository.findByCnpj("22.333.444/0001-55"))
                 .orElseGet(() -> fornecedorRepository.save(Fornecedor.builder()
                         .razaoSocial("Fertilizantes Cerrado")
-                        .cnpj("22.333.444/0001-55")
+                        .cnpj("27.865.757/0001-02")
                         .telefoneContato("(62) 3333-2020")
                         .build()));
 
@@ -113,7 +116,7 @@ public class DatabaseSeeder implements CommandLineRunner {
         if (clienteRepository.count() == 0) {
             clienteRepository.save(Cliente.builder()
                     .nome("Fazenda Boa Vista")
-                    .cpfCnpj("33.444.555/0001-66")
+                    .cpfCnpj("60.701.190/0001-04")
                     .inscricaoEstadual("10987654-3")
                     .telefone("(62) 99999-1111")
                     .endereco("Rodovia GO-060, Km 45, Zona Rural")
@@ -121,7 +124,7 @@ public class DatabaseSeeder implements CommandLineRunner {
 
             clienteRepository.save(Cliente.builder()
                     .nome("João Pedro Produtor")
-                    .cpfCnpj("123.456.789-00")
+                    .cpfCnpj("529.982.247-25")
                     .inscricaoEstadual("ISENTO")
                     .telefone("(62) 98888-2222")
                     .endereco("Estrada Municipal S/N, Chácara Esperança")

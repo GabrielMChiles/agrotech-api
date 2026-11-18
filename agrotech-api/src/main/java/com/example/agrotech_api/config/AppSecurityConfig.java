@@ -8,6 +8,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -20,7 +21,12 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 @Configuration
 public class AppSecurityConfig implements WebMvcConfigurer {
 
+    public static final String ATRIBUTO_USUARIO_LOGADO = "usuarioLogado";
+
     private final UsuarioService usuarioService;
+
+    @Value("${app.cors.allowed-origins:http://localhost:4200}")
+    private String[] allowedOrigins;
 
     public AppSecurityConfig(@Lazy UsuarioService usuarioService) {
         this.usuarioService = usuarioService;
@@ -34,7 +40,7 @@ public class AppSecurityConfig implements WebMvcConfigurer {
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/api/**")
-                .allowedOrigins("http://localhost:4200")
+                .allowedOrigins(allowedOrigins)
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS")
                 .allowedHeaders("*")
                 .allowCredentials(true);
@@ -51,7 +57,7 @@ public class AppSecurityConfig implements WebMvcConfigurer {
 
                         String authHeader = request.getHeader("Authorization");
                         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-                            response.sendError(HttpStatus.UNAUTHORIZED.value(), "Token ausente ou malformado");
+                            escreverErro(response, HttpStatus.UNAUTHORIZED, "Não Autorizado", "Sessão ausente. Faça login novamente.");
                             return false;
                         }
 
@@ -60,18 +66,37 @@ public class AppSecurityConfig implements WebMvcConfigurer {
                             Usuario usuarioLogado = usuarioService.validarToken(token);
 
                             // Bloqueio OWASP A01: Apenas ADMIN acessa /api/usuarios
-                            if (request.getRequestURI().startsWith("/api/usuarios") && usuarioLogado.getRole() != RoleUsuario.ADMIN) {
-                                response.sendError(HttpStatus.FORBIDDEN.value(), "Acesso negado: requer perfil ADMIN");
+                            String uri = request.getRequestURI();
+                            String metodo = request.getMethod();
+                            boolean escrita = !"GET".equalsIgnoreCase(metodo);
+                            boolean areaAdmin = uri.startsWith("/api/usuarios")
+                                    || (uri.startsWith("/api/funcionarios") && escrita)
+                                    || "DELETE".equalsIgnoreCase(metodo)
+                                    || (uri.startsWith("/api/vendas") && uri.endsWith("/cancelar"));
+                            if (areaAdmin && usuarioLogado.getRole() != RoleUsuario.ADMIN) {
+                                escreverErro(response, HttpStatus.FORBIDDEN, "Acesso Negado", "Esta operação requer perfil ADMIN.");
                                 return false;
                             }
 
+                            request.setAttribute(ATRIBUTO_USUARIO_LOGADO, usuarioLogado);
                             return true;
                         } catch (UnauthorizedException ex) {
-                            response.sendError(HttpStatus.UNAUTHORIZED.value(), ex.getMessage());
+                            escreverErro(response, HttpStatus.UNAUTHORIZED, "Não Autorizado", ex.getMessage());
                             return false;
                         }
                     }
                 }).addPathPatterns("/api/**")
                 .excludePathPatterns("/api/auth/login");
+    }
+
+    private static void escreverErro(HttpServletResponse response, HttpStatus status, String titulo, String detalhe)
+            throws java.io.IOException {
+        response.setStatus(status.value());
+        response.setContentType("application/problem+json");
+        response.setCharacterEncoding("UTF-8");
+        String json = "{\"status\":" + status.value()
+                + ",\"title\":\"" + titulo + "\""
+                + ",\"detail\":\"" + detalhe.replace("\"", "'") + "\"}";
+        response.getWriter().write(json);
     }
 }

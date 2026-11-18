@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -51,6 +52,10 @@ public class VendaService {
 
         for (ItemVenda itemSolicitado : vendaRequisitada.getItens()) {
             Produto produto = produtoService.buscarPorId(itemSolicitado.getProduto().getId());
+
+            if (produto.getDataValidade() != null && produto.getDataValidade().isBefore(LocalDate.now())) {
+                throw new BusinessRuleException("O produto '" + produto.getNome() + "' está vencido e não pode ser vendido.");
+            }
 
             // RN02: Restrição de Estoque Mínimo
             produtoService.debitarEstoque(produto, itemSolicitado.getQuantidade());

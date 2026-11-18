@@ -22,7 +22,7 @@ public class Fornecedor {
     @Column(length = 20)
     private String telefoneContato;
 
-    @OneToMany(mappedBy = "fornecedor", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    @OneToMany(mappedBy = "fornecedor", fetch = FetchType.LAZY)
     @Builder.Default
     private List<Produto> produtos = new ArrayList<>();
 }

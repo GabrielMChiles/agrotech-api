@@ -10,7 +10,7 @@ public class FuncionarioMapper {
     public Funcionario toEntity(FuncionarioRequestDTO dto) {
         return Funcionario.builder()
                 .nome(dto.nome())
-                .matricula(dto.matricula())
+                .matricula(dto.matricula().trim().toUpperCase())
                 .cargo(dto.cargo())
                 .build();
     }

@@ -32,6 +32,11 @@ public class Produto {
 
     private LocalDate dataValidade;
 
+    // Bloqueio otimista: impede duas vendas simultâneas de baixarem o mesmo saldo
+    @Version
+    @Column(nullable = false, columnDefinition = "bigint not null default 0")
+    private long version;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "fornecedor_id", nullable = false)
     private Fornecedor fornecedor;
